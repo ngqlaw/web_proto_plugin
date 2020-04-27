@@ -1,0 +1,15 @@
+{application, web_proto_plugin, [
+    {description, "make spec proto routing file depend on rebar3_gpb_plugin"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        bbmustache
+    ]},
+    {env,[]},
+    {modules, []},
+
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.
