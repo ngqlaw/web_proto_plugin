@@ -60,18 +60,21 @@ compile(AppInfo, State) ->
                             end, [], TemplateDirs),
     rebar_api:debug("template files found: ~p", [Templates]),
 
-    ModuleNamePrefix = proplists:get_value(module_name_prefix, GpbOpts0,
-                                           ?DEFAULT_MODULE_PREFIX),
-    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts0,
-                                           ?DEFAULT_MODULE_SUFFIX),
+    ModuleNamePrefix = to_binary(proplists:get_value(module_name_prefix, GpbOpts0,
+                                           ?DEFAULT_MODULE_PREFIX)),
+    ModuleNameSuffix = to_binary(proplists:get_value(module_name_suffix, GpbOpts0,
+                                           ?DEFAULT_MODULE_SUFFIX)),
     MainProto = proplists:get_value(main_proto_mark, WebProtoOpts0),
     SubProto = proplists:get_value(sub_proto_mark, WebProtoOpts0),
 
     %% 遍历所有协议文件，生成模板要素数据
     {MainInfo, SubInfo} = gather(Protos, to_binary(MainProto), to_binary(SubProto), [], #{}),
+    rebar_api:debug("gen proto main mark info: ~p", [MainInfo]),
+    rebar_api:debug("gen proto sub mark info: ~p", [SubInfo]),
     DataInfo = gen_data_info(MainInfo, SubInfo, ModuleNamePrefix, ModuleNameSuffix, []),
+    rebar_api:debug("gen data info: ~p", [DataInfo]),
     %% 使用模板生成文件
-    compile(Templates, TargetErlDir, #{data => DataInfo}),
+    compile(Templates, TargetErlDir, #{"data" => DataInfo}),
     ok.
 
 -spec clean(rebar_app_info:t(),
@@ -154,11 +157,11 @@ gen_data_info([{Name, MainProto} | MainInfo], SubInfo, ModuleNamePrefix, ModuleN
     L = maps:get(Name, SubInfo, []),
     NameAtom = binary_to_atom(Name, utf8),
     AddInfo = [#{
-        name => NameAtom,
-        action => binary_to_atom(Action, utf8),
-        main_proto_num => MainProto,
-        sub_proto_num => SubProto,
-        module => binary_to_atom(<<ModuleNamePrefix/binary, Name/binary, ModuleNameSuffix/binary>>, utf8)
+        "name" => NameAtom,
+        "action" => binary_to_atom(Action, utf8),
+        "main_proto_num" => MainProto,
+        "sub_proto_num" => SubProto,
+        "module" => binary_to_atom(<<ModuleNamePrefix/binary, Name/binary, ModuleNameSuffix/binary>>, utf8)
     } || {Action, SubProto} <- L],
     gen_data_info(MainInfo, SubInfo, ModuleNamePrefix, ModuleNameSuffix, AddInfo ++ DataInfo);
 gen_data_info([], _SubInfo, _ModuleNamePrefix, _ModuleNameSuffix, DataInfo) ->
@@ -218,11 +221,11 @@ find_template_files(AppDir, DepsDir, Opts) ->
     lists:foldl(fun({deps, SourceDir}, Acc) ->
                     Acc ++ rebar_utils:find_files(
                              filename:join(DepsDir, SourceDir),
-                                           ".*\.proto\$");
+                                           ".*\.mustache\$");
                    (SourceDir, Acc) ->
                     Acc ++ rebar_utils:find_files(
                              filename:join(AppDir, SourceDir),
-                                           ".*\.proto\$")
+                                           ".*\.mustache\$")
                 end,
                 [], proplists:get_all_values(i, Opts)).
 
